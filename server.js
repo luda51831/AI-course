@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
@@ -32,17 +34,18 @@ app.use('/uploads', express.static('uploads'));
 
 const upload = multer({ storage });
 
-const SECRET_KEY = 'your_super_secret_key';
 
-// Адмін
-const ADMIN_EMAIL = 'admin@example.com';
-const ADMIN_PASS = 'AdminPass123!';
 
-// MongoDB
-mongoose.connect('mongodb+srv://ludaruda20:M7zYUSp1fI1ReNOS@primary.eq1sde7.mongodb.net/3d_learning_db')
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB error:', err));
-
+  const PORT = process.env.PORT || 3000;
+  const SECRET_KEY = process.env.SECRET_KEY;
+  
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+  const ADMIN_PASS = process.env.ADMIN_PASS;
+  
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB error:', err));
+  
 // Схеми
 const User = mongoose.model('User', new mongoose.Schema({
   name: String,
@@ -773,5 +776,4 @@ app.get('*', (req, res, next) => {
 });
 
 // Запуск сервера
-const PORT = 3000;
 app.listen(PORT, () => console.log(`✅ Сервер запущено: http://localhost:${PORT}`));
