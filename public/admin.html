@@ -108,9 +108,11 @@
 
   async function loadList() {
     try {
-      const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lessons", {
-        headers: { Authorization: "Bearer " + token }
-      });
+      const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lesson", {
+  method: "POST",
+  headers: { Authorization: "Bearer " + token },
+  body: fd
+});
       lessonList = await res.json();
       renderList();
     } catch (err) {
