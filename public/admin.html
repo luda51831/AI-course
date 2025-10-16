@@ -99,82 +99,83 @@
 "></div>
 
 
-  <script>
-
-    document.addEventListener("DOMContentLoaded", () => {
-  const token = localStorage.getItem("token");
-  const filterSelect = document.getElementById("filterLanguage");
-  let lessonList = [];
-
-  async function loadList() {
-  try {
-    const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lessons", {
-      headers: { Authorization: "Bearer " + token }
-    });
-    if (!res.ok) throw new Error("Помилка сервера: " + res.status);
-    lessonList = await res.json();
-    renderList();
-  } catch (err) {
-    console.error("Помилка завантаження:", err);
-    showToast("Не вдалося завантажити уроки", "error");
-  }
-}
-
-document.getElementById("lessonForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lesson", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token },
-      body: fd
-    });
-    const data = await res.json();
-    
-    showToast(data.message || "Урок додано успішно!", "success");
-    loadList();
-    e.target.reset();
-  } catch (err) {
-    console.error(err);
-    showToast("Помилка при збереженні уроку", "error");
-  }
-};
-
-
-  function renderList() {
-    const selectedLang = filterSelect.value;
-    const filteredList = lessonList.filter(l => selectedLang === "all" || l.language === selectedLang);
-
-    document.getElementById("existing").innerHTML = filteredList.map(l => `
-      <li>
-        <strong>ID:</strong> ${l._id || "—"}<br>
-        <strong>Номер уроку:</strong> ${l.lessonNumber || "—"}<br>
-        <strong>Назва:</strong> ${l.title}<br>
-        <strong>Опис:</strong> ${l.description || "—"}<br>
-        <strong>Мова:</strong> ${l.language || "—"}<br>
-        <strong>Відкрито з:</strong> ${l.openDay || "—"}<br>
-        <strong>Закрито по:</strong> ${l.closeDay || "—"}<br>
-        <strong>Відео:</strong> ${l.videoUrl ? `<a href="https://ai-course-sm7i.onrender.com${l.videoUrl}" target="_blank">Переглянути</a>` : "Немає"}<br>
-        <button onclick="deleteLesson('${l._id}')">Видалити</button>
-      </li>
-    `).join("");
-  }
-
-  filterSelect.addEventListener("change", renderList);
-
+<script>
+  const API_URL = 'https://ai-course-sm7i.onrender.com/api';
   
-
-
-  window.deleteLesson = async (id) => {
-    await fetch("https://ai-course-sm7i.onrender.com/api/admin/lesson/" + id, {
-      method: "DELETE",
-      headers: { Authorization: "Bearer " + token }
-    });
+  document.addEventListener("DOMContentLoaded", () => {
+    const token = localStorage.getItem("token");
+    const filterSelect = document.getElementById("filterLanguage");
+    let lessonList = [];
+  
+    async function loadList() {
+      try {
+        const res = await fetch(`${API_URL}/admin/lessons`, {
+          headers: { Authorization: "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("Помилка сервера: " + res.status);
+        lessonList = await res.json();
+        renderList();
+      } catch (err) {
+        console.error("Помилка завантаження:", err);
+        showToast("Не вдалося завантажити уроки", "error");
+      }
+    }
+  
+    document.getElementById("lessonForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      try {
+        const res = await fetch(`${API_URL}/admin/lesson`, {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token },
+          body: fd
+        });
+        const data = await res.json();
+        showToast(data.message || "Урок додано успішно!", "success");
+        loadList();
+        e.target.reset();
+      } catch (err) {
+        console.error(err);
+        showToast("Помилка при збереженні уроку", "error");
+      }
+    };
+  
+    function renderList() {
+      const selectedLang = filterSelect.value;
+      const filteredList = lessonList.filter(l => selectedLang === "all" || l.language === selectedLang);
+  
+      document.getElementById("existing").innerHTML = filteredList.map(l => `
+        <li>
+          <strong>ID:</strong> ${l._id || "—"}<br>
+          <strong>Номер уроку:</strong> ${l.lessonNumber || "—"}<br>
+          <strong>Назва:</strong> ${l.title}<br>
+          <strong>Опис:</strong> ${l.description || "—"}<br>
+          <strong>Мова:</strong> ${l.language || "—"}<br>
+          <strong>Відкрито з:</strong> ${l.openDay || "—"}<br>
+          <strong>Закрито по:</strong> ${l.closeDay || "—"}<br>
+          <strong>Відео:</strong> ${l.videoUrl ? `<a href="${API_URL}${l.videoUrl}" target="_blank">Переглянути</a>` : "Немає"}<br>
+          <button onclick="deleteLesson('${l._id}')">Видалити</button>
+        </li>
+      `).join("");
+    }
+  
+    filterSelect.addEventListener("change", renderList);
+  
+    window.deleteLesson = async (id) => {
+      try {
+        await fetch(`${API_URL}/admin/lesson/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token }
+        });
+        loadList();
+      } catch (err) {
+        console.error(err);
+        showToast("Помилка при видаленні уроку", "error");
+      }
+    };
+  
     loadList();
-  };
-
-  loadList();
-});
+  });  
 
 function showToast(message, type = 'info', duration = 4000) {
   const container = document.getElementById('toastContainer');
