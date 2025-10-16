@@ -10,7 +10,6 @@ const multer = require('multer');
 const fs = require('fs');
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
 // Де будуть зберігатися фото
@@ -34,15 +33,30 @@ app.use('/uploads', express.static('uploads'));
 
 const upload = multer({ storage });
 
+require('dotenv').config();
 
 
+// CORS: тільки для фронтенду
 app.use(cors({
-  origin: "https://ai-course-sm7i.onrender.com",
+  origin: 'https://ai-course-sm7i.onrender.com',
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.use(express.json());
+
+// Підключення до MongoDB
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('MongoDB connected'))
+.catch(err => console.error('MongoDB error:', err));
+
+// Тестовий роут для перевірки
+app.get('/api/test', (req, res) => {
+  res.json({ ok: true });
+});
 
   const PORT = process.env.PORT || 3000;
   const SECRET_KEY = process.env.SECRET_KEY;
