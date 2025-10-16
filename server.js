@@ -34,19 +34,15 @@ app.use('/uploads', express.static('uploads'));
 
 const upload = multer({ storage });
 
-import express from "express";
-import cors from "cors";
 
 
 app.use(cors({
-  origin: "https://ai-course-sm7i.onrender.com", // 👈 твій фронтенд
+  origin: "https://ai-course-sm7i.onrender.com",
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.use(express.json());
-app.use("/api", yourRoutes);
-
 
   const PORT = process.env.PORT || 3000;
   const SECRET_KEY = process.env.SECRET_KEY;
