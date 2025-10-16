@@ -107,18 +107,39 @@
   let lessonList = [];
 
   async function loadList() {
-    try {
-      const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lesson", {
-  method: "POST",
-  headers: { Authorization: "Bearer " + token },
-  body: fd
-});
-      lessonList = await res.json();
-      renderList();
-    } catch (err) {
-      console.error("Помилка завантаження:", err);
-    }
+  try {
+    const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lessons", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (!res.ok) throw new Error("Помилка сервера: " + res.status);
+    lessonList = await res.json();
+    renderList();
+  } catch (err) {
+    console.error("Помилка завантаження:", err);
+    showToast("Не вдалося завантажити уроки", "error");
   }
+}
+
+document.getElementById("lessonForm").onsubmit = async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  try {
+    const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lesson", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      body: fd
+    });
+    const data = await res.json();
+    
+    showToast(data.message || "Урок додано успішно!", "success");
+    loadList();
+    e.target.reset();
+  } catch (err) {
+    console.error(err);
+    showToast("Помилка при збереженні уроку", "error");
+  }
+};
+
 
   function renderList() {
     const selectedLang = filterSelect.value;
@@ -141,26 +162,7 @@
 
   filterSelect.addEventListener("change", renderList);
 
-  document.getElementById("lessonForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  try {
-    const res = await fetch("http://const API_URL = 'https://ai-course-sm7i.onrender.com/api/admin/lesson", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token },
-      body: fd
-    });
-    const data = await res.json();
-    
-    showToast(data.message || "Урок додано успішно!");
-
-    loadList();
-    
-    e.target.reset();
-  } catch (err) {
-    showToast("Помилка при збереженні уроку", "error");
-  }
-};
+  
 
 
   window.deleteLesson = async (id) => {
