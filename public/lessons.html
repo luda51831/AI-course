@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI-курс з нуля</title>
+  <link rel="stylesheet" href="css/fonStyles.css">
+  <link rel="stylesheet" href="css/lessonsStyles.css">
+  <link rel="stylesheet" href="css/navStyles.css">
+
+</head>
+<body>
+
+  <header>
+    <div class="logo">AI-курс з нуля</div>
+  
+    <nav class="nav-links">
+      <a href="index.html">Головна</a>
+      <a href="lessons.html" class="active">Уроки</a>
+      <a href="homework.html" id="homeworkLink">Домашні завдання</a>
+      <a href="#" id="profileLink">Профіль</a>
+    </nav>
+  
+    <select id="mobileNav" class="mobile-nav">
+      <option value="index.html">Головна</option>
+      <option value="lessons.html">Уроки</option>
+      <option value="homework.html">Домашні завдання</option>
+      <option value="#" id="profileLink">Профіль</option>
+    </select>
+    
+    <div class="user-info">
+      <div class="user-email" id="userEmail" style="color: #c9d1d9; font-weight: 500; margin-left: 20px;"></div>
+      <select id="languageSelect">
+        <option value="uk">🇺🇦</option>
+        <option value="en">🇬🇧</option>
+      </select>
+    </div>
+
+    <script src="index.js"></script>   
+    <div class="notification" id="notificationIcon" title="Сповіщення">
+      <img src="../alarm-bell.png" alt="Сповіщення" class="notification-img">
+      <span class="badge hidden" id="notificationCount">0</span>
+    </div>
+    <div id="notificationList" style="display:none; max-width: 400px; position: absolute; top: 50px; right: 20px; background: #161b22; color: #c9d1d9; border: 1px solid #58a6ff; border-radius: 8px; padding: 10px;"></div>
+              
+    </header>
+
+<main>
+  <div id="authSection" class="auth">
+    <h2>Вхід / Реєстрація</h2>
+    <div id="errorMsg" class="error"></div>
+    <input type="email" id="emailInput" placeholder="Email" required />
+    <input type="password" id="passwordInput" placeholder="Пароль" required />
+    <button id="loginBtn">Увійти</button>
+    <button id="registerBtn">Зареєструватись</button>
+  </div>
+
+  <div id="appSection" class="hidden">
+
+
+    <div class="content-container" style="display: flex; gap: 20px; align-items: flex-start;">
+  
+      <!-- Ліва частина (відео + прогрес) -->
+      <div class="left-side" style="flex: 2;">
+        <div id="videoSection"></div>
+        <div id="progressSection" style="margin-top: 10px;"></div>
+      </div>
+    
+      <!-- Права частина (список уроків) -->
+      <div class="right-side" style="flex: 1; border-radius:10px; padding:10px;">
+        <h3 id="lessonsTitle" style="color:#58a6ff;">
+          <img src="../lesson.png" alt="Уроки" class="notification-img"> Уроки
+        </h3>
+        
+        <div class="lesson-list" id="lessonList"></div>
+
+
+      </div>
+    
+    </div>
+    
+    
+
+    <div id="homeworkUpload" style="margin-top: 30px;">
+      <h3>Відправити домашнє завдання</h3>
+      <form id="homeworkForm" enctype="multipart/form-data">
+        <div 
+        id="dropZone"
+        style="border: 2px dashed #58a6ff; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; background-color: #161b22;">
+        Перетягніть файл сюди або натисніть для вибору
+        
+        <input type="file" name="file" id="homeworkFile" style="display:none;" required>
+
+      </div>
+      
+        <textarea name="comment" id="homeworkText" placeholder="Коментар до домашнього завдання" style="margin-top:10px;width:100%;height:60px;background:#0d1117;color:#c9d1d9;border:none;padding:8px;border-radius:5px;"></textarea>
+        <button type="submit" class="btn-submit">Відправити</button>
+        <div id="uploadedHomework" style="margin-top: 10px;"></div>
+
+        <div id="homework-list" style="margin-top: 10px;"></div>
+      </form>
+    </div>
+    
+  </div>
+</main>
+
+<div id="toastContainer" style="
+  position: fixed;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+"></div>
+
+
+
+<script src="index.js"></script>
+
+<script>
+  const API_URL = 'http://localhost:3000/api';
+
+  const lessonList = document.getElementById('lessonList');
+  const videoSection = document.getElementById('videoSection');
+  const progressSection = document.getElementById('progressSection');
+  const homeworkComment = document.getElementById('homeworkComment');
+
+  const notificationCount = document.getElementById('notificationCount');
+
+  let token = localStorage.getItem('token');
+  let lessons = [];
+  let selectedLesson = null;
+  let userProgress = {};
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+  }
+
+  function clearError() {
+    errorMsg.textContent = '';
+  }
+
+  function setAuth(tokenStr, user = null) {
+  token = tokenStr;
+  localStorage.setItem('token', token);
+
+  if (user && user.id) {
+    localStorage.setItem('userId', user.id);
+  }
+
+  authSection.classList.add('hidden');
+  appSection.classList.remove('hidden');
+  loadLessons();
+}
+
+
+
+  function showUploadedHomework(filename, comment) {
+  const container = document.getElementById('uploadedHomework');
+  container.innerHTML = `
+    <div style="background:#21262d;padding:10px;border-radius:6px;">
+      <strong>Ваше відправлене ДЗ:</strong><br>
+      <a href="${API_URL}/uploads/${filename}" target="_blank" style="color:#58a6ff;">📎 ${filename}</a>
+      ${comment ? `<div style="margin-top:5px;font-style:italic;color:#8b949e;">${comment}</div>` : ''}
+    </div>
+  `;
+}
+
+  async function apiRequest(path, method='GET', body=null) {
+    const headers = {'Content-Type': 'application/json'};
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(API_URL + path, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+    });
+    if (res.status === 401 || res.status === 403) {
+      logout();
+      throw new Error('Неавторизований доступ');
+    }
+    return res.json();
+  }
+  async function loadProgress() {
+  try {
+    const lang = localStorage.getItem('language') || 'uk';
+    const res = await apiRequest(`/profile/progress?lang=${lang}`);
+
+    console.log('Прогрес користувача:', res);
+
+    userProgress = res[lang]?.progress || {};
+  } catch (err) {
+    console.error('Помилка завантаження прогресу:', err);
+    throw err;
+  }
+}
+
+
+
+  const languageSelect = document.getElementById('languageSelect');
+
+// Завантаження уроків з урахуванням мови
+async function loadLessons() {
+  try {
+    let lang = localStorage.getItem('language') || languageSelect.value;
+
+    languageSelect.value = lang;
+    localStorage.setItem('language', lang);
+
+    console.log('Поточна мова:', lang);
+
+    // Отримуємо уроки з бекенду
+    const allLessons = await apiRequest(`/lessons?lang=${lang}`);
+    console.log('allLessons з бекенду:', allLessons);
+
+    if (Array.isArray(allLessons)) {
+      lessons = allLessons;
+    } else if (allLessons.lessons && Array.isArray(allLessons.lessons)) {
+      lessons = allLessons.lessons;
+    } else {
+      lessons = [];
+    }
+
+    await loadProgress();
+    renderLessons();
+
+    // 🟢 Якщо нічого не вибрано, автоматично обираємо урок з найменшим lessonNumber
+    if (!selectedLesson && lessons.length > 0) {
+      const openLessons = lessons.filter(l => l.isOpen ?? true);
+      if (openLessons.length > 0) {
+        const firstLesson = openLessons.reduce((min, l) => {
+          const num = l.lessonNumber ?? l.lessonId ?? Infinity;
+          return num < (min.lessonNumber ?? min.lessonId ?? Infinity) ? l : min;
+        }, openLessons[0]);
+
+        selectLesson(firstLesson);
+      }
+    }
+
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+
+
+
+
+
+// Обробник зміни мови
+languageSelect.addEventListener('change', async () => {
+  const lang = languageSelect.value;
+  localStorage.setItem('language', lang);
+
+  // 🟢 скидаємо вибраний урок
+  selectedLesson = null;
+  videoSection.innerHTML = '';
+  progressSection.innerHTML = '';
+
+  await loadLessons();
+});
+
+
+// Рендер уроків
+function renderLessons() {
+  lessonList.innerHTML = '';
+  const lang = localStorage.getItem('language');
+  const lessonLabel = lang === 'en' ? 'Lesson' : 'Урок';
+
+  lessons.forEach((lesson, i) => {
+    const number = lesson.lessonNumber || lesson.lessonId || i + 1;
+    const lessonProgress = userProgress[number.toString()] || 0;
+
+    const div = document.createElement('div');
+    div.className = 'lesson-item';
+
+    const isOpen = lesson.isOpen ?? true;
+
+    div.style.transition = 'border 0.3s ease, box-shadow 0.3s ease';
+
+    if (selectedLesson && selectedLesson.lessonNumber === number) {
+      div.style.backgroundColor = '#0d0f12';
+      div.style.color = 'white'; 
+      div.style.border = '2px solid #1f6feb';
+  div.style.borderRadius = '8px';
+  div.style.padding = '8px';
+  div.style.boxShadow = '0 0 10px rgba(31, 111, 235, 0.5)';
+  
+    } else {
+      div.style.backgroundColor = '#21262d';
+      div.style.color = '#c9d1d9';
+      div.style.border = 'none';
+  div.style.boxShadow = 'none';
+    }
+
+    div.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          ${lessonLabel} ${number}. <strong>${lesson.title}</strong>
+          ${lesson.description ? `<div style="margin-top: 4px; font-size: 13px; color: #8b949e;">${lesson.description}</div>` : ''}
+        </div>
+        <div style="margin-left: 10px; color: #58a6ff; font-weight: bold;">
+          ${lessonProgress}%
+        </div>
+      </div>
+    `;
+
+    if (isOpen) {
+      div.style.cursor = 'pointer';
+      div.onclick = () => {
+        selectedLesson = lesson;
+        renderLessons();
+        selectLesson(lesson);
+      };
+    } else {
+      div.style.opacity = 0.5;
+      div.style.cursor = 'not-allowed';
+      div.innerHTML += ` <span style="color:red;">🔒</span>`;
+    }
+
+    lessonList.appendChild(div);
+  });
+}
+
+
+
+async function selectLesson(lesson) {
+  selectedLesson = lesson;
+  renderLessons();
+  clearError();
+
+  
+// Відео
+videoSection.innerHTML = `
+  <div class="lesson-title-search">
+    <span class="lesson-title-left" id="lessonTitle"></span>
+<span class="lesson-title-right">
+  <img src="../search.png" alt="Search" style="width:20px; height:20px;">
+</span>
+  </div>
+  <video id="lessonVideo" controls controlsList="nodownload" oncontextmenu="return false" preload="metadata">
+    <source src="${lesson.videoUrl}" type="video/mp4">
+    Ваш браузер не підтримує відео.
+  </video>
+`;
+
+typeWriter('lessonTitle', lesson.title);
+
+
+
+
+// 🟢 Функція для перетворення посилань у клікабельні
+function linkify(text) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.replace(urlRegex, url => {
+    return `<a href="${url}" target="_blank" style="color:#58a6ff; text-decoration:underline;">${url}</a>`;
+  });
+}
+
+const lang = localStorage.getItem('language') || 'uk';
+const descriptionLabel = lang === 'en' ? 'Description' : 'Опис';
+
+if (lesson.description) {
+  videoSection.insertAdjacentHTML('beforeend', `
+    <div style="margin-top:15px; padding:10px; background:#21262d; border-radius:6px;">
+      <strong>${descriptionLabel}:</strong><br>
+      ${linkify(lesson.description)}
+    </div>
+  `);
+}
+
+
+
+
+  const video = document.getElementById('lessonVideo');
+  const progressBarHTML = `
+    <div class="progress-container" style="width: 100%; background: #444; border-radius: 4px; height: 10px; margin-top: 10px;">
+      <div class="progress-bar" id="progressBar" style="height: 100%; width: 0; background: #58a6ff; border-radius: 4px;"></div>
+    </div>
+  `;
+  progressSection.innerHTML = progressBarHTML;
+  const progressBar = document.getElementById('progressBar');
+
+
+  // Отримуємо прогрес з localStorage та з бекенду
+  const lessonNumberStr = lesson.lessonNumber ? lesson.lessonNumber.toString() : '';
+const savedProgress = userProgress[lessonNumberStr] ?? 0;
+let lastSavedPercent = savedProgress;
+
+
+  // Очищаємо старі обробники, якщо є
+  if (video._loadedmetadataHandler) video.removeEventListener('loadedmetadata', video._loadedmetadataHandler);
+  if (video._timeupdateHandler) video.removeEventListener('timeupdate', video._timeupdateHandler);
+  if (video._endedHandler) video.removeEventListener('ended', video._endedHandler);
+
+  // Встановлюємо позицію після завантаження метаданих
+  video._loadedmetadataHandler = () => {
+    if (video.duration && savedProgress > 0) {
+      const resumeTime = (savedProgress / 100) * video.duration;
+      video.currentTime = resumeTime;
+    }
+  };
+  video.addEventListener('loadedmetadata', video._loadedmetadataHandler);
+
+  let lastTime = 0;
+
+  // Збереження прогресу кожні 5%
+  video._timeupdateHandler = async () => {
+    if (video.currentTime < lastTime) {
+      video.currentTime = lastTime;
+      return;
+    }
+    lastTime = video.currentTime;
+
+    const percent = Math.floor((video.currentTime / video.duration) * 100);
+    progressBar.style.width = percent + '%';
+
+    if (percent >= lastSavedPercent + 5 && percent < 100) {
+      lastSavedPercent = percent;
+      
+      if (lesson.lessonNumber) {
+        await updateProgress(lesson.lessonNumber, percent);
+      }
+    }
+  };
+  video.addEventListener('timeupdate', video._timeupdateHandler);
+
+  video._endedHandler = async () => {
+  const percent = 100;
+
+  progressBar.style.width = '100%';
+
+  if (lesson.lessonNumber) {
+    await updateProgress(lesson.lessonNumber, percent);
+
+    // 🟢 збереження в localStorage та userProgress
+    const key = 'progress_' + lesson.lessonNumber;
+    localStorage.setItem(key, percent.toString());
+    userProgress[lesson.lessonNumber.toString()] = percent;
+  }
+  const lang = localStorage.getItem('language') || 'uk';
+showToast(lang === 'en' ? 'The video has been fully watched!' : 'Відео переглянуто повністю!');
+};
+
+video.addEventListener('ended', video._endedHandler);
+
+
+}
+
+
+
+
+
+async function updateProgress(lessonNumber, percent) {
+  try {
+    console.log('Відправка прогресу:', lessonNumber, percent);
+    await apiRequest('/progress', 'POST', { lessonNumber, percent });
+
+    const progressCheck = await apiRequest('/progress');
+    console.log('Прогрес після оновлення:', progressCheck[lessonNumber]);
+
+    const key = 'progress_' + lessonNumber;
+    localStorage.setItem(key, percent.toString());
+    userProgress[lessonNumber.toString()] = percent;
+  } catch (e) {
+    showError('Не вдалося оновити прогрес');
+  }
+}
+
+
+
+
+
+
+
+  async function loadHomework(lessonNumber) {
+  try {
+    const currentUserId = localStorage.getItem('userId');
+    const res = await fetch(`${API_URL}/homework/${lessonNumber}`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+
+    const container = document.getElementById('homework-list');
+
+    if (!res.ok) {
+      container.innerHTML = '<div style="color:#8b949e;">Помилка завантаження ДЗ</div>';
+      return;
+    }
+
+    const homeworks = await res.json();
+    container.innerHTML = '';
+
+    if (!homeworks || homeworks.length === 0) {
+      container.innerHTML = '<div style="color:#8b949e;">Немає завантаженого ДЗ для цього уроку</div>';
+      return;
+    }
+
+    // Рендеримо список ДЗ
+    homeworks.forEach(hw => {
+  const id = hw.id || hw._id;
+  const commentEscaped = hw.comment ? hw.comment.replace(/'/g, "\\'") : '';
+
+  const div = document.createElement('div');
+  div.style.background = hw.userId === currentUserId ? '#1f6feb' : '#21262d';
+  div.style.padding = '10px';
+  div.style.borderRadius = '6px';
+  div.style.marginBottom = '8px';
+
+  const lang = localStorage.getItem('language') || 'uk';
+  const lessonLabel = lang === 'en' ? 'Lesson' : 'Урок';
+  const userLabel = lang === 'en' ? 'Your submitted homework:' : 'Ваше відправлене ДЗ:';
+  const userComment = lang === 'en' ? 'Your сomment on the homework: ' : 'Ваш коментар до ДЗ: ';
+
+  div.innerHTML = `
+    <div style="font-weight:bold; margin-bottom:5px; color:#58a6ff;">${userLabel}</div>
+    <strong>${lessonLabel} ${hw.lessonNumber}</strong><br>
+    <a href="/homeworks/${hw.storedFilename}" target="_blank" style="color:#58a6ff;">
+      📎 ${hw.filename}
+    </a>
+    ${hw.comment ? `<div style="font-style:italic;color:#8b949e;margin-top:4px;">${userComment}${hw.comment}</div>` : ''}
+  `;
+
+  container.appendChild(div);
+});
+
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById('homework-list').innerHTML = '<div style="color:#8b949e;">Помилка завантаження</div>';
+  }
+}
+
+
+
+
+
+
+const homeworkForm = document.getElementById('homeworkForm');
+const homeworkFile = document.getElementById('homeworkFile');
+const dropZone = document.getElementById('dropZone');
+const homeworkText = document.getElementById('homeworkText');
+
+dropZone.addEventListener('click', () => {
+  homeworkFile.click();
+});
+
+homeworkFile.addEventListener('change', () => {
+  if (homeworkFile.files.length > 0) {
+    dropZone.textContent = `📎 ${homeworkFile.files[0].name}`;
+  }
+});
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.style.backgroundColor = '#21262d';
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.style.backgroundColor = '#161b22';
+});
+
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.style.backgroundColor = '#161b22';
+  homeworkFile.files = e.dataTransfer.files;
+});
+
+homeworkForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const language = localStorage.getItem('language') || languageSelect.value;
+
+  if (!selectedLesson)
+  return showToast(lang === 'en' ? 'Lesson not selected' : 'Урок не вибрано');
+
+if (!homeworkFile.files.length)
+  return showToast(lang === 'en' ? 'Please select a file' : 'Оберіть файл');
+
+  // Перевірка: чи вже є ДЗ для цього уроку
+  try {
+    const checkRes = await fetch(`${API_URL}/homework/${selectedLesson.lessonNumber}`, {
+      headers: { Authorization: 'Bearer ' + localStorage.getItem('token') }
+    });
+
+    const existingHomework = await checkRes.json();
+
+    if (existingHomework && existingHomework.length > 0) {
+      return showToast(
+  language === 'en'
+    ? 'You already have a homework submission for this lesson. To upload a new one, please delete the previous file first.'
+    : 'У вас вже є домашнє завдання для цього уроку. Щоб завантажити нове, спершу видаліть старе.'
+);
+    }
+  } catch (err) {
+    console.error('Помилка перевірки існуючого ДЗ:', err);
+    return showToast(
+  language === 'en'
+    ? 'Failed to check existing homework.'
+    : 'Не вдалося перевірити існуюче домашнє завдання.'
+);
+  }
+
+  // Якщо ДЗ немає – можна завантажувати
+  const formData = new FormData();
+  formData.append('file', homeworkFile.files[0]);
+  formData.append('comment', homeworkText.value.trim());
+  formData.append('lessonNumber', selectedLesson.lessonNumber);
+  formData.append('language', languageSelect.value);
+
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${API_URL}/homework`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      return showToast(
+  language === 'en'
+    ? err.message || 'Error while sending.'
+    : err.message || 'Помилка при відправці.'
+);
+    }
+
+    showToast(
+  language === 'en'
+    ? 'Homework sent successfully!'
+    : 'Домашнє завдання відправлено!'
+);
+
+    homeworkFile.value = '';
+    homeworkText.value = '';
+    updateDropZoneText(); 
+
+    loadHomework(selectedLesson.lessonNumber);
+
+  } catch (err) {
+    showToast(
+  language === 'en'
+    ? 'Connection error with the server'
+    : 'Помилка з’єднання з сервером'
+);
+    console.error(err);
+  }
+});
+
+function typeWriter(elementId, text, speed = 100, cursorSpeed = 300) {
+  const el = document.getElementById(elementId);
+  el.textContent = ''; 
+  let i = 0;
+  let cursorVisible = true;
+
+  // Мигаючий курсор
+  const cursorInterval = setInterval(() => {
+    if (i >= text.length) {
+      el.textContent = text + (cursorVisible ? '|' : '');
+      cursorVisible = !cursorVisible;
+    }
+  }, cursorSpeed);
+
+  // Друкуємо текст по одній літері
+  const typingInterval = setInterval(() => {
+    if (i < text.length) {
+      el.textContent = text.substring(0, i + 1) + '|';
+      i++;
+    } else {
+      clearInterval(typingInterval);
+    }
+  }, speed);
+}
+
+
+
+
+document.getElementById('appSection').classList.remove('hidden');
+
+
+
+
+  // Запуск
+  if (token) {
+    authSection.classList.add('hidden');
+    appSection.classList.remove('hidden');
+    loadLessons();
+  }
+ 
+
+  
+  function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+
+  // Колір залежно від типу
+  let bgColor = '#21262d';
+  if (type === 'success') bgColor = '#238636';
+  else if (type === 'error') bgColor = '#f85149';
+  else if (type === 'warning') bgColor = '#e3b341';
+
+  toast.style.background = bgColor;
+  toast.style.color = '#c9d1d9';
+  toast.style.padding = '10px 15px';
+  toast.style.borderRadius = '6px';
+  toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+  toast.style.fontSize = '14px';
+  toast.style.fontWeight = '500';
+  toast.style.opacity = '0';
+  toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  toast.textContent = message;
+  toast.style.whiteSpace = 'nowrap'; 
+
+  container.appendChild(toast);
+
+  // Анімація появи
+  setTimeout(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  }, 10);
+
+  // Авто-зникнення
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-20px)';
+    setTimeout(() => container.removeChild(toast), 300);
+  }, duration);
+}
+
+function updateToastPosition() {
+  const container = document.getElementById('toastContainer');
+  const scrollY = window.scrollY || window.pageYOffset;
+  const viewportHeight = window.innerHeight;
+
+  container.style.position = 'absolute';
+
+  if (scrollY + viewportHeight / 2 < document.body.scrollHeight / 2) {
+    container.style.top = (scrollY + 20) + 'px';
+    container.style.bottom = 'auto';
+  } else {
+    container.style.bottom = '20px';
+    container.style.top = 'auto';
+  }
+
+  container.style.left = '50%';
+  container.style.transform = 'translateX(-50%)';
+}
+
+
+// Виклик при скролі
+window.addEventListener('scroll', updateToastPosition);
+window.addEventListener('resize', updateToastPosition);
+
+function updateDropZoneText() {
+  const lang = localStorage.getItem('language');
+  const dropZone = document.getElementById('dropZone');
+
+  if (dropZone) {
+    const defaultText = lang === 'en'
+      ? 'Drag your file here or click to select'
+      : 'Перетягніть файл сюди або натисніть для вибору';
+
+    if (!homeworkFile.files.length) {
+      dropZone.textContent = defaultText;
+    }
+  }
+}
+
+updateDropZoneText();
+
+languageSelect.addEventListener('change', updateDropZoneText);
+
+updateToastPosition();
+
+function updateLessonsTitle() {
+  const lang = localStorage.getItem('language') || 'uk';
+  const lessonsTitle = document.getElementById('lessonsTitle');
+  
+  if (lessonsTitle) {
+    lessonsTitle.innerHTML =
+      lang === 'en'
+        ? '<img src="../lesson.png" alt="Lessons" class="notification-img"> Lessons'
+        : '<img src="../lesson.png" alt="Уроки" class="notification-img"> Уроки';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', updateLessonsTitle);
+
+document.getElementById('languageSelect')?.addEventListener('change', () => {
+  localStorage.setItem('language', document.getElementById('languageSelect').value);
+  updateLessonsTitle();
+});
+
+    
+// встановити активний пункт при завантаженні
+const mobileNav = document.getElementById('mobileNav');
+const activeLink = document.querySelector('.nav-links a.active');
+if (activeLink) {
+  mobileNav.value = activeLink.getAttribute('href');
+}
+
+
+if (mobileNav) {
+  mobileNav.addEventListener('change', (e) => {
+    const value = e.target.value;
+    const role = localStorage.getItem('role'); // беремо роль користувача
+
+    if (value === '#') { // це твій пункт "Профіль"
+      if (role === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'profile.html';
+      }
+    } else {
+      window.location.href = value;
+    }
+  });
+}
+
+// при зміні select переходити за посиланням
+mobileNav.addEventListener('change', (e) => {
+  window.location.href = e.target.value;
+});
+
+</script>
+<script src="language.js"></script>
+<script src="notification.js"></script>
+
+
+</body>
+</html>

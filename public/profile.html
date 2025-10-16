@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>Профіль користувача</title>
+  <link rel="stylesheet" href="css/fonStyles.css">    
+  <link rel="stylesheet" href="css/profileStyles.css">
+  <link rel="stylesheet" href="css/navStyles.css">
+
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="logo-text">AI-курс з нуля</span>
+      <img src="logo.png" alt="Logo" class="logo-img">
+    </div>
+
+    <nav class="nav-links">
+      <a href="index.html">Головна</a>
+      <a href="lessons.html">Уроки</a>
+      <a href="homework.html" id="homeworkLink">Домашні завдання</a>
+      <a href="#" id="profileLink" class="active">Профіль</a>
+    </nav>
+
+    <select id="mobileNav" class="mobile-nav">
+      <option value="index.html">Головна</option>
+      <option value="lessons.html">Уроки</option>
+      <option value="homework.html">Домашні завдання</option>
+      <option value="#" id="profileLink">Профіль</option>
+    </select>
+
+    <div class="user-info">
+    <select id="languageSelect">
+      <option value="uk">🇺🇦</option>
+      <option value="en">🇬🇧</option>
+    </select>
+  </div>
+
+  <div class="notification" id="notificationIcon" title="Сповіщення">
+    <img src="../alarm-bell.png" alt="Сповіщення" class="notification-img">
+    <span class="badge hidden" id="notificationCount">0</span>
+  </div>
+    <div id="notificationList" style="display:none; max-width: 400px; position: absolute; top: 50px; right: 20px; background: #161b22; color: #c9d1d9; border: 1px solid #58a6ff; border-radius: 8px; padding: 10px;"></div>
+              
+  </header>
+
+  <div class="profile-container">
+
+    <div class="profile-details">
+      <img id="avatar" class="avatar" src="" alt="Фото користувача" />
+      <h1 id="username">Завантаження...</h1>
+      <div class="email" id="email"></div>
+      <div id="currentLanguage" style="margin-top:10px; color:#8b949e;"></div>
+      <div id="progressUk"></div>
+<div id="progressEn"></div>
+
+      <button class="logout" id="logoutBtn">Вийти</button>
+    </div>
+
+    <div class="lesson-info">
+      <div class="homework-list">
+        <h2>Домашні завдання</h2>
+        <div id="homeworkContainer">Завантаження домашніх завдань...</div>
+      </div>
+    </div>
+
+  </div>
+  
+  <script>
+    
+    const API_URL = 'http://localhost:3000/api';
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert('Ви не авторизовані!');
+      window.location.href = '/';
+    }
+
+// встановити активний пункт при завантаженні
+const mobileNav = document.getElementById('mobileNav');
+const activeLink = document.querySelector('.nav-links a.active');
+if (activeLink) {
+  mobileNav.value = activeLink.getAttribute('href');
+}
+
+
+if (mobileNav) {
+  mobileNav.addEventListener('change', (e) => {
+    const value = e.target.value;
+    const role = localStorage.getItem('role'); // беремо роль користувача
+
+    if (value === '#') { // це твій пункт "Профіль"
+      if (role === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'profile.html';
+      }
+    } else {
+      window.location.href = value;
+    }
+  });
+}
+
+// при зміні select переходити за посиланням
+mobileNav.addEventListener('change', (e) => {
+  window.location.href = e.target.value;
+});
+
+    // Завантажити профіль користувача
+  async function loadProfile() {
+  try {
+    const res = await fetch(API_URL + '/profile', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+
+    if (!res.ok) {
+      alert('Помилка отримання профілю');
+      localStorage.removeItem('token');
+      window.location.href = '/';
+      return;
+    }
+
+    const data = await res.json();
+
+    document.getElementById('username').textContent = data.name;
+    document.getElementById('email').textContent = data.email;
+    document.getElementById('avatar').src = data.avatarUrl;
+
+    // Встановлюємо поточну мову
+    const langSelect = document.getElementById('languageSelect');
+    const currentLangDiv = document.getElementById('currentLanguage');
+    const currentLang = langSelect.value || 'uk';
+
+    currentLangDiv.textContent = currentLang === 'uk' ? 'Поточна мова: Українська' : 'Current language: English';
+
+    langSelect.addEventListener('change', () => {
+      const newLang = langSelect.value;
+      currentLangDiv.textContent = newLang === 'uk' ? 'Поточна мова: Українська' : 'Current language: English';
+
+      loadProgressSummary();
+      loadHomework();
+    });
+
+    await loadProgressSummary();
+  } catch (err) {
+    alert('Помилка з’єднання');
+    console.error(err);
+  }
+}
+
+
+    // Завантажити загальний прогрес
+  async function loadProgressSummary() {
+  try {
+    const res = await fetch(API_URL + '/profile/progress', {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+
+    if (!res.ok) throw new Error('HTTP error ' + res.status);
+
+    const data = await res.json();
+    console.log('Прогрес:', data);
+
+    const lang = document.getElementById("languageSelect").value;
+    const containerUk = document.getElementById('progressUk');
+    const containerEn = document.getElementById('progressEn');
+
+    // Очищаємо обидва контейнери
+    containerUk.innerHTML = '';
+    containerEn.innerHTML = '';
+
+    if (lang === "uk") {
+      containerUk.innerHTML = `
+        <div style="margin-top:10px; background:#21262d; padding:10px; border-radius:6px;">
+          <strong>Українська програма:</strong> ${data.uk.overallProgress}% (${data.uk.totalLessons} уроків)
+        </div>
+      `;
+    } else if (lang === "en") {
+      containerEn.innerHTML = `
+        <div style="margin-top:10px; background:#21262d; padding:10px; border-radius:6px;">
+          <strong>English program:</strong> ${data.en.overallProgress}% (${data.en.totalLessons} lessons)
+        </div>
+      `;
+    }
+
+  } catch (err) {
+    console.error('Помилка завантаження прогресу:', err);
+  }
+}
+
+
+async function downloadHomework(id, filename) {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`/download/homework/${id}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  if (!res.ok) return alert('Помилка завантаження файлу');
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+
+    // Завантажити домашні завдання користувача
+    async function loadHomework() {
+      try {
+        const res = await fetch(API_URL + '/homework', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+
+        if (!res.ok) {
+          document.getElementById('homeworkContainer').textContent = 'Не вдалося завантажити домашні завдання';
+          return;
+        }
+
+        const homeworks = await res.json();
+
+        if (homeworks.length === 0) {
+          document.getElementById('homeworkContainer').textContent = 'Домашні завдання відсутні';
+          return;
+        }
+
+        // Сортуємо домашки за датою (нові зверху)
+        homeworks.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+        const container = document.getElementById('homeworkContainer');
+        container.innerHTML = '';
+
+        homeworks.forEach(hw => {
+  const div = document.createElement('div');
+  div.className = 'homework-item';
+
+  const lessonNum = document.createElement('div');
+lessonNum.className = 'lesson-number';
+
+// отримуємо вибрану мову з select
+const lang = document.getElementById("languageSelect").value;
+
+if (lang === "uk") {
+  lessonNum.textContent = `Урок ${hw.lessonNumber}`;
+} else if (lang === "en") {
+  lessonNum.textContent = `Lesson ${hw.lessonNumber}`;
+}
+
+document.getElementById("languageSelect").addEventListener("change", () => {
+  loadHomework(); 
+  loadProgressSummary(); 
+});
+
+
+  const filename = document.createElement('a');
+  filename.className = 'homework-filename';
+
+filename.style.cursor = 'pointer';
+filename.addEventListener('click', () => downloadHomework(hw._id, hw.filename));
+
+filename.target = '_blank';
+filename.textContent = hw.filename || hw.storedFilename || 'Файл';
+
+  filename.textContent = hw.filename || 'Файл без назви';
+  filename.style.color = '#58a6ff';
+  filename.style.textDecoration = 'none';
+
+  const dateDiv = document.createElement('div');
+dateDiv.className = 'homework-date';
+
+const date = new Date(hw.uploadedAt);
+const locale = lang === "uk" ? "uk-UA" : "en-US";
+
+const formattedDate = date.toLocaleString(locale, { 
+  year: "numeric", 
+  month: "short", 
+  day: "numeric", 
+
+});
+
+// дата видалення
+const deleteDate = new Date(date.getTime() + 37 * 24 * 60 * 60 * 1000);
+const formattedDeleteDate = deleteDate.toLocaleDateString(locale, {
+  year: "numeric",
+  month: "short",
+  day: "numeric"
+});
+
+// різниця у днях
+const daysLeft = Math.ceil((deleteDate - new Date()) / (1000 * 60 * 60 * 24));
+
+// вибір кольору
+let color;
+if (daysLeft <= 5) color = "#f85149"; 
+else if (daysLeft <= 14) color = "#e3b341";
+else color = "#3fb950"; 
+
+// текст залежно від мови
+const text = lang === "uk"
+  ? `Завантажено: ${formattedDate} — буде видалено через <span style="color:${color}; font-weight:600;">${daysLeft} дн.</span> (${formattedDeleteDate})`
+  : `Uploaded: ${formattedDate} — will be deleted in <span style="color:${color}; font-weight:600;">${daysLeft} days</span> (${formattedDeleteDate})`;
+
+dateDiv.innerHTML = text;
+dateDiv.style.fontSize = "0.52em";
+dateDiv.style.color = "#8b949e";
+
+
+
+  div.appendChild(lessonNum);
+  div.appendChild(filename);
+  div.appendChild(dateDiv);
+
+  container.appendChild(div);
+});
+
+      } catch (err) {
+        document.getElementById('homeworkContainer').textContent = 'Помилка завантаження домашніх завдань';
+        console.error(err);
+      }
+    }
+
+    document.getElementById('logoutBtn').onclick = () => {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    };
+
+    loadProfile();
+    loadHomework();
+
+    
+  </script>
+  
+  <script src="language.js"></script>
+  <script src="index.js"></script>
+   <script src="notification.js"></script>
+
+</body>
+</html>

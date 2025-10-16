@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Домашні завдання</title>
+    <link rel="stylesheet" href="css/fonStyles.css">
+    <link rel="stylesheet" href="css/homeworkStyles.css">
+    <link rel="stylesheet" href="css/navStyles.css">
+
+</head>
+<body>
+        <header>
+          <div class="logo">AI-курс з нуля</div>
+        
+          <nav class="nav-links">
+            <a href="index.html">Головна</a>
+            <a href="lessons.html">Уроки</a>
+            <a href="homework.html" id="homeworkLink" class="active">Домашні завдання</a>
+            <a href="#" id="profileLink">Профіль</a>
+          </nav>
+
+          <select id="mobileNav" class="mobile-nav">
+            <option value="index.html">Головна</option>
+            <option value="lessons.html">Уроки</option>
+            <option value="homework.html">Домашні завдання</option>
+            <option value="#" id="profileLink">Профіль</option>
+          </select>
+
+          <div class="user-info">
+          <div class="user-email" id="userEmail" style="color: #c9d1d9; font-weight: 500; margin-left: 20px;"></div>
+          <select id="languageSelect">
+            <option value="uk">🇺🇦</option>
+            <option value="en">🇬🇧</option>
+          </select>
+        </div>
+
+        <div class="notification" id="notificationIcon" title="Сповіщення">
+          <img src="../alarm-bell.png" alt="Сповіщення" class="notification-img">
+          <span class="badge hidden" id="notificationCount">0</span>
+        </div>
+          <div id="notificationList" style="display:none; max-width: 400px; position: absolute; top: 50px; right: 20px; background: #161b22; color: #c9d1d9; border: 1px solid #58a6ff; border-radius: 8px; padding: 10px;"></div>
+                    
+        </header>
+
+        <div id="homework-list"></div>
+
+<!-- Модальне вікно підтвердження -->
+<div id="confirmModal" class="custom-modal hidden">
+  <div class="custom-modal-content">
+    <p id="confirmMessage"></p>
+    <div class="modal-buttons">
+      <button id="confirmYes">✅ Так</button>
+      <button id="confirmNo">❌ Ні</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальне вікно редагування -->
+<div id="promptModal" class="custom-modal hidden">
+  <div class="custom-modal-content">
+    <p id="promptMessage"></p>
+    <input type="text" id="promptInput" />
+    <div class="modal-buttons">
+      <button id="promptOk">💾 OK</button>
+      <button id="promptCancel">❌ Скасувати</button>
+    </div>
+  </div>
+</div>
+
+        <div id="toastContainer" style="
+        position: fixed;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 9999;
+      "></div>
+
+<script src="index.js"></script>
+<script src="notification.js"></script>
+<script src="language.js"></script>
+
+  
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+  loadHomework();
+
+  // слухаємо зміну мови
+  const select = document.getElementById('languageSelect');
+  if (select) {
+    select.addEventListener('change', () => {
+      const lang = select.value;
+      localStorage.setItem('language', lang);
+      loadHomework();
+    });
+  }
+});
+
+
+async function loadHomework() {
+  const token = localStorage.getItem('token');
+  const lang = localStorage.getItem('language') || 'uk';
+
+  if (!token) {
+    showToast(lang === 'en' ? 'Please log in' : 'Авторизуйтеся');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/homework', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+    const container = document.getElementById('homework-list');
+
+    if (!Array.isArray(data) || data.length === 0) {
+      container.innerHTML = `<p>${lang === 'en' ? 'No homework available' : 'Немає домашніх завдань'}</p>`;
+      return;
+    }
+
+    container.innerHTML = ''; 
+
+    data.forEach(hw => {
+      const div = document.createElement('div');
+      div.style.border = '1px solid #ccc';
+      div.style.padding = '10px';
+      div.style.margin = '10px 0';
+      div.style.borderRadius = '6px';
+      div.style.background = '#161b22';
+      div.style.color = '#c9d1d9';
+      div.style.display = 'flex';
+      div.style.justifyContent = 'space-between';
+      div.style.alignItems = 'center';
+
+      // Ліва частина з інформацією
+      const infoDiv = document.createElement('div');
+infoDiv.classList.add('homework-info');
+
+infoDiv.innerHTML = `
+  <p><strong>${lang === 'en' ? 'Lesson' : 'Урок'} #${hw.lessonNumber}</strong></p>
+  <p class="comment">${lang === 'en' ? 'Comment:' : 'Коментар:'} ${hw.comment || (lang === 'en' ? 'No comment' : 'Без коментаря')}</p>
+  <p><a href="/homeworks/${hw.storedFilename}" target="_blank">
+    ${lang === 'en' ? 'View file' : 'Переглянути файл'}
+  </a></p>
+  ${hw.adminComment 
+    ? `<p class="teacher-response">${lang === 'en' ? 'Teacher response:' : 'Відповідь викладача:'} ${hw.adminComment}</p>` 
+    : `<p class="pending">${lang === 'en' ? 'Pending review' : 'Очікує на перевірку'}</p>`}
+`;
+div.appendChild(infoDiv);
+
+
+      // Права частина з кнопками
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.style.display = 'flex';
+      buttonsDiv.style.flexDirection = 'column';
+      buttonsDiv.style.gap = '5px';
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = lang === 'en' ? 'Edit' : 'Редагувати';
+      editBtn.classList.add('edit-btn');
+      editBtn.onclick = async () => {
+        const newComment = await customPrompt(
+  lang === 'en' ? 'Edit comment:' : 'Редагуйте коментар',
+  hw.comment || ''
+);
+if (newComment === null) return;
+        try {
+          const res = await fetch(`/api/homework/${hw._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ comment: newComment })
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            showToast(err.message || (lang === 'en' ? 'Error editing homework' : 'Помилка редагування'));
+            return;
+          }
+
+          showToast(lang === 'en' ? 'Comment updated' : 'Коментар оновлено');
+          loadHomework();
+        } catch (err) {
+          showToast(lang === 'en' ? 'Connection error' : 'Помилка з’єднання');
+          console.error(err);
+        }
+      };
+      buttonsDiv.appendChild(editBtn);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = lang === 'en' ? 'Delete' : 'Видалити';
+      deleteBtn.classList.add('delete-btn');
+      deleteBtn.onclick = async () => {
+
+// Підтвердження видалення
+const confirmDelete = await customConfirm(
+  lang === 'en'
+    ? 'Are you sure you want to delete this homework?'
+    : 'Ви впевнені, що хочете видалити це ДЗ?'
+);
+if (!confirmDelete) return;
+
+  try {
+    const res = await fetch(`/api/homework/${hw._id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (res.ok) {
+      showToast(
+        lang === 'en'
+          ? 'Homework deleted successfully'
+          : 'Домашнє завдання успішно видалено',
+      );
+      loadHomework();
+    } else {
+      showToast(
+        lang === 'en'
+          ? 'Failed to delete homework'
+          : 'Не вдалося видалити домашнє завдання',
+        'error'
+      );
+    }
+  } catch (err) {
+    showToast(
+      lang === 'en'
+        ? 'Connection error'
+        : 'Помилка з’єднання',
+      'error'
+    );
+    console.error(err);
+  }
+};
+
+
+
+
+      buttonsDiv.appendChild(deleteBtn);
+
+      div.appendChild(buttonsDiv);
+
+      container.appendChild(div);
+    });
+  } catch (err) {
+    console.error(err);
+    const container = document.getElementById('homework-list');
+    if (container) {
+      container.innerHTML = `<p>${lang === 'en' ? 'Error loading homework' : 'Помилка завантаження домашок'}</p>`;
+    }
+  }
+}
+
+
+function showToast(message, type = 'info', duration = 4000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+
+  let bgColor = '#21262d';
+  if (type === 'success') bgColor = '#238636';
+  else if (type === 'error') bgColor = '#f85149';
+  else if (type === 'warning') bgColor = '#e3b341';
+
+  toast.style.background = bgColor;
+  toast.style.color = '#c9d1d9';
+  toast.style.padding = '10px 15px';
+  toast.style.borderRadius = '6px';
+  toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+  toast.style.fontSize = '14px';
+  toast.style.fontWeight = '500';
+  toast.style.opacity = '0';
+  toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  toast.textContent = message;
+  toast.style.whiteSpace = 'nowrap'; 
+
+  container.appendChild(toast);
+
+  // Анімація появи
+  setTimeout(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+  }, 10);
+
+  // Авто-зникнення
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-20px)';
+    setTimeout(() => container.removeChild(toast), 300);
+  }, duration);
+}
+
+function updateToastPosition() {
+  const container = document.getElementById('toastContainer');
+  const scrollY = window.scrollY || window.pageYOffset;
+  const viewportHeight = window.innerHeight;
+
+  container.style.position = 'absolute';
+
+  if (scrollY + viewportHeight / 2 < document.body.scrollHeight / 2) {
+    container.style.top = (scrollY + 20) + 'px';
+    container.style.bottom = 'auto';
+  } else {
+    container.style.bottom = '20px';
+    container.style.top = 'auto';
+  }
+
+  container.style.left = '50%';
+  container.style.transform = 'translateX(-50%)';
+}
+
+function customConfirm(message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmModal');
+    const msg = document.getElementById('confirmMessage');
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+
+    msg.textContent = message;
+    modal.classList.remove('hidden');
+
+    yesBtn.onclick = () => {
+      modal.classList.add('hidden');
+      resolve(true);
+    };
+    noBtn.onclick = () => {
+      modal.classList.add('hidden');
+      resolve(false);
+    };
+  });
+}
+
+function customPrompt(message, defaultValue = '') {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('promptModal');
+    const msg = document.getElementById('promptMessage');
+    const input = document.getElementById('promptInput');
+    const okBtn = document.getElementById('promptOk');
+    const cancelBtn = document.getElementById('promptCancel');
+
+    msg.textContent = message;
+    input.value = defaultValue;
+    modal.classList.remove('hidden');
+
+    okBtn.onclick = () => {
+      modal.classList.add('hidden');
+      resolve(input.value);
+    };
+    cancelBtn.onclick = () => {
+      modal.classList.add('hidden');
+      resolve(null);
+    };
+  });
+}
+
+
+function updateModalLanguage() {
+  const lang = localStorage.getItem('language') || 'uk';
+
+  const confirmYes = document.getElementById('confirmYes');
+  const confirmNo = document.getElementById('confirmNo');
+  const promptOk = document.getElementById('promptOk');
+  const promptCancel = document.getElementById('promptCancel');
+
+  if (lang === 'en') {
+    if (confirmYes) confirmYes.textContent = '✅ Yes';
+    if (confirmNo) confirmNo.textContent = '❌ No';
+    if (promptOk) promptOk.textContent = '💾 OK';
+    if (promptCancel) promptCancel.textContent = '❌ Cancel';
+  } else {
+    if (confirmYes) confirmYes.textContent = '✅ Так';
+    if (confirmNo) confirmNo.textContent = '❌ Ні';
+    if (promptOk) promptOk.textContent = '💾 OK';
+    if (promptCancel) promptCancel.textContent = '❌ Скасувати';
+  }
+}
+
+// Викликати при завантаженні сторінки
+document.addEventListener('DOMContentLoaded', updateModalLanguage);
+
+// І при зміні мови
+document.getElementById('languageSelect')?.addEventListener('change', () => {
+  localStorage.setItem('language', document.getElementById('languageSelect').value);
+  updateModalLanguage();
+});
+
+
+// Виклик при скролі
+window.addEventListener('scroll', updateToastPosition);
+window.addEventListener('resize', updateToastPosition);
+
+// Початкова позиція
+updateToastPosition();
+
+// встановити активний пункт при завантаженні
+const mobileNav = document.getElementById('mobileNav');
+const activeLink = document.querySelector('.nav-links a.active');
+if (activeLink) {
+  mobileNav.value = activeLink.getAttribute('href');
+}
+
+
+if (mobileNav) {
+  mobileNav.addEventListener('change', (e) => {
+    const value = e.target.value;
+    const role = localStorage.getItem('role'); // беремо роль користувача
+
+    if (value === '#') { // це твій пункт "Профіль"
+      if (role === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'profile.html';
+      }
+    } else {
+      window.location.href = value;
+    }
+  });
+}
+
+// при зміні select переходити за посиланням
+mobileNav.addEventListener('change', (e) => {
+  window.location.href = e.target.value;
+});
+</script>
+<script src="index.js"></script>
+
+</body>
+</html>
