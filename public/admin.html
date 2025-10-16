@@ -108,7 +108,7 @@
 
   async function loadList() {
     try {
-      const res = await fetch("https://ai-course-2ek1.onrender.com/api/admin/lessons", {
+      const res = await fetch("https://ai-course-sm7i.onrender.com/api/admin/lessons", {
         headers: { Authorization: "Bearer " + token }
       });
       lessonList = await res.json();
@@ -131,7 +131,7 @@
         <strong>Мова:</strong> ${l.language || "—"}<br>
         <strong>Відкрито з:</strong> ${l.openDay || "—"}<br>
         <strong>Закрито по:</strong> ${l.closeDay || "—"}<br>
-        <strong>Відео:</strong> ${l.videoUrl ? `<a href="https://ai-course-2ek1.onrender.com${l.videoUrl}" target="_blank">Переглянути</a>` : "Немає"}<br>
+        <strong>Відео:</strong> ${l.videoUrl ? `<a href="https://ai-course-sm7i.onrender.com${l.videoUrl}" target="_blank">Переглянути</a>` : "Немає"}<br>
         <button onclick="deleteLesson('${l._id}')">Видалити</button>
       </li>
     `).join("");
@@ -143,7 +143,7 @@
   e.preventDefault();
   const fd = new FormData(e.target);
   try {
-    const res = await fetch("http://const API_URL = 'https://ai-course-2ek1.onrender.com/api/admin/lesson", {
+    const res = await fetch("http://const API_URL = 'https://ai-course-sm7i.onrender.com/api/admin/lesson", {
       method: "POST",
       headers: { Authorization: "Bearer " + token },
       body: fd
@@ -162,7 +162,7 @@
 
 
   window.deleteLesson = async (id) => {
-    await fetch("http://https://ai-course-2ek1.onrender.com/api/admin/lesson/" + id, {
+    await fetch("https://ai-course-sm7i.onrender.com/api/admin/lesson/" + id, {
       method: "DELETE",
       headers: { Authorization: "Bearer " + token }
     });
