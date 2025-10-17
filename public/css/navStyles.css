@@ -236,7 +236,7 @@ header .logo {
 @media (max-width: 480px) {
   header {
     flex-direction: column;
-    gap: 8px;
+    gap: 3px;
   }
   .logo {
     font-size: 1rem;
@@ -247,10 +247,10 @@ header .logo {
     justify-content: center;
   }
   .nav-links a {
-    font-size: 0.8rem;
+    font-size: 0.6rem;
   }
   .user-email {
-    font-size: 0.8rem;
+    font-size: 0.3rem;
   }
   .notification-img {
     width: 20px;
