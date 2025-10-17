@@ -104,3 +104,120 @@ body {
   }
 
   
+@media (max-width: 1024px) {
+  body {
+    padding: 30px;
+    height: auto;
+  }
+
+  .auth {
+    max-width: 500px;
+    width: 90%;
+    padding: 25px;
+  }
+
+  input, button {
+    font-size: 15px;
+    padding: 10px;
+  }
+
+  button {
+    border-radius: 8px;
+  }
+
+  .modal-content {
+    max-width: 500px;
+    padding: 40px;
+  }
+
+  .toggle-password {
+    font-size: 18px;
+    right: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 20px;
+    height: auto;
+    align-items: flex-start;
+  }
+
+  .auth {
+    width: 100%;
+    max-width: 90%;
+    padding: 20px;
+    margin-top: 60px;
+  }
+
+  input, button {
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .modal-content {
+    width: 90%;
+    margin: 30% auto;
+    padding: 30px;
+  }
+
+  .toggle-password {
+    font-size: 18px;
+    right: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+
+  .auth {
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 40px;
+  }
+
+  input, button {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  button {
+    border-radius: 6px;
+  }
+
+  .modal-content {
+    padding: 20px;
+    margin-top: 40%;
+    max-width: 90%;
+  }
+
+  .toggle-password {
+    font-size: 14px;
+    right: 6px;
+  }
+
+  #loginBtn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .auth {
+    padding: 10px;
+  }
+
+  input, button {
+    font-size: 13px;
+    padding: 6px;
+  }
+
+  .modal-content {
+    padding: 15px;
+  }
+
+  .toggle-password {
+    font-size: 12px;
+  }
+}
