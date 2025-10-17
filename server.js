@@ -64,13 +64,7 @@ app.get('/api/test', (req, res) => {
   const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
   const ADMIN_PASS = process.env.ADMIN_PASS;
   
-  mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB error:', err));
-  
+
 // Схеми
 const User = mongoose.model('User', new mongoose.Schema({
   name: String,
