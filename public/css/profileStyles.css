@@ -241,7 +241,6 @@ min-width: auto;
   }
 }
 
-/* ====================== Десктоп ====================== */
 @media (min-width: 1025px) {
   .profile-container {
     flex-wrap: nowrap;
@@ -270,12 +269,6 @@ min-width: auto;
     font-size: 14px;
   }
 
-  .profile-container {
-    flex-direction: column;
-    padding: 10px;
-    gap: 15px;
-    margin: 20px auto;
-  }
 
   .profile-details {
     width: 100%;
@@ -329,25 +322,43 @@ min-width: auto;
     margin-bottom: 12px;
   }
 
-  .homework-item {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .lesson-number {
-    min-width: 60px;
-    font-size: 13px;
-  }
-
-  .homework-filename {
-    font-size: 13px;
-    min-width: 100%;
-  }
 
   .homework-date {
     text-align: left;
     font-size: 12px;
+  }
+}
+
+/* ===== Дуже маленькі екрани (до 480px) ===== */
+@media (max-width: 480px) {
+  .profile-container {
+    flex-direction: column;
+    padding: 10px;
+    gap: 15px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .lesson-info,
+  .homework-list,
+  #homeworkContainer {
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .homework-item {
+    width: 100%;
+    padding: 8px 10px;
+    box-sizing: border-box;
+    word-break: break-word;
+  }
+
+  .lesson-number {
+    min-width: auto;
+  }
+
+  .homework-filename {
+    max-width: 100%;
   }
 }
