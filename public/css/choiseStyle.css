@@ -24,6 +24,8 @@ body {
     background: #0d1117;
     color: #c9d1d9;
     font-size: 14px;
+    font-family: 'Aksent', sans-serif;
+
   }
   button {
     background: linear-gradient(90deg, #1f6feb, #58a6ff);
@@ -103,7 +105,7 @@ body {
     width: 104%;
   }
 
-  
+
 @media (max-width: 1024px) {
   body {
     padding: 30px;
@@ -175,7 +177,9 @@ body {
     align-items: center;
 
   }
-
+#languageSelection h2{
+  font-size: 14px;
+}
   .auth {
     padding: 15px;
     border-radius: 8px;
